@@ -54,10 +54,11 @@ module.exports = function(RED) {
 
         this.checkConnection = function(){
             var d = PhysDevs[this.deviceid];
+
             if(d) {
                 if (! this.dev){
-                    this.status({shape:'dot',fill:'green', text:d.device.miioModel});
-                    this.dev =  PhysDevs[this.deviceid].device;
+                    this.status({shape:'dot',fill:'green', text:d.miioModel});
+                    this.dev =  PhysDevs[this.deviceid];
                     if(this.listenactions){
                         this.dev.onAny(this.actionHandler);
                     }
@@ -92,8 +93,16 @@ module.exports = function(RED) {
                             try{
                                 var c = msg.payload.name;
                                 var args = msg.payload.args;
+
                                 if (typeof this.dev[c] === "function"){
-                                    this.dev[c].apply(this.dev, args);
+                                    this.dev[c].apply(this.dev, args)
+                                    .then((result)=> {
+                                        this.send({payload:result})
+    
+                                    })
+                                    .catch(err => {
+                                        this.send({payload:{error: true, name: c, message: err}})
+                                    });
                                 }
 
                             }catch(e){
@@ -122,11 +131,13 @@ module.exports = function(RED) {
 
     RED.nodes.registerType("miio-device", MiioWrapperDevice);
 
-RED.httpAdmin.get("/miiodevs", RED.auth.needsPermission('miio-device.read'), (req,res) => {
+    RED.httpAdmin.get("/miiodevs", RED.auth.needsPermission('miio-device.read'), (req,res) => {
+
         var KnownDevs = Object.keys(PhysDevs).reduce((obj,key) => {
+            const { miioModel } = PhysDevs[key]
+
             obj[key] = {
-                name: PhysDevs[key].device.miioModel,
-                address: PhysDevs[key].device.address,
+                name: miioModel,
             }
             return obj;
         }, {});
