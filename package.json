@@ -29,6 +29,6 @@
   },
   "homepage": "https://github.com/Gromina/node-red-contrib-miio-wrapper#readme",
   "dependencies": {
-    "miio": "../miio"
+    "miio": "https://github.com/GManzato/miio"
   }
 }
